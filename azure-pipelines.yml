@@ -13,7 +13,7 @@ variables:
   TL_USER: 'scan'
   TL_PASS: 'scan'
   TL_CONSOLE_URL: 'https://40.119.233.172:8083' 
-  ImageName: 'gmaindol/evil:$(Build.BuildId)'
+  ImageName: 'gmaindol/prismacloud-lab:$(Build.BuildId)'
  
 stages:
 - stage: Build
