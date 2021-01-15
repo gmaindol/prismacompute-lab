@@ -1,0 +1,50 @@
+name : Docker-CI
+trigger:
+  branches:
+    include:
+      - master
+ 
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+
+  # Container registry service connection established during pipeline creation
+  TL_USER: 'scan'
+  TL_PASS: 'scan'
+  TL_CONSOLE_URL: 'https://40.119.233.172:8083' 
+  ImageName: 'gmaindol/evil:$(Build.BuildId)'
+ 
+stages:
+- stage: Build
+  displayName: Build image
+  jobs:  
+  - job: Build
+    displayName: Build and push Docker image
+    steps:
+    - task: Docker@1
+      displayName: 'Build the Docker image'
+      inputs:
+        containerregistrytype: 'Container Registry'
+        dockerRegistryEndpoint: 'Dockerhub-service-connection'
+        command: 'Build an image'
+        dockerFile: '**/Dockerfile'
+        imageName: '$(ImageName)'
+        includeLatestTag: true
+        useDefaultContext: false
+        buildContext: '.'
+
+    - script: |
+        curl -k -u $TL_USER:$TL_PASS --output ./twistcli $TL_CONSOLE_URL/api/v1/util/twistcli
+        sudo chmod a+x ./twistcli
+        ./twistcli images scan --details -address $TL_CONSOLE_URL -u $TL_USER -p $TL_PASS $(ImageName)
+      
+      displayName: 'Scan image with Twistlock' 
+    - task: Docker@1
+      displayName: 'Push the Docker image to Dockerhub'
+      inputs:
+        containerregistrytype: 'Container Registry'
+        dockerRegistryEndpoint: 'Dockerhub-service-connection'
+        command: 'Push an image'
+        imageName: '$(ImageName)'
+      condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
